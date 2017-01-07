@@ -1,0 +1,1 @@
+This repository contains solutions to the private interview questions with Haskell support (dated early 2017) on the HackerRank For Work job interview platform. Solutions contain the full text of the problem description and were tested on the platform.  
