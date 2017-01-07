@@ -51,9 +51,9 @@ EMPTY
 -}
 
 import Control.Monad.State
-import Data.List (intercalate)
+import Data.List
 
-type Stack = [Int]
+type Stack = [Integer]
 
 
 pop :: State Stack String
@@ -63,23 +63,22 @@ pop = do
     [x] -> state $ \[x] -> ("EMPTY", [])
     _ -> state $ \(x:xs) -> (show $ head xs,xs)
 
-push :: Int -> State Stack String
+push :: Integer -> State Stack String
 push x = state $ \xs -> (show x,x:xs)
 
-inc :: [Int] -> State Stack String
+inc :: [Integer] -> State Stack String
 inc [e,k] = do
   stack <- get
-  let n = length stack - e
-  let top = take n stack
-  let bottom = drop n stack
+  let n = genericLength stack - e 
+  let (top,bottom) = genericSplitAt n stack
   let out = top ++ (map (+k) bottom)
   put out
   return $ show $ head out
 
 parseArg :: String -> State Stack String
 parseArg "pop" = pop
-parseArg ('p':'u':'s':'h':' ':xs) = push (read xs :: Int)
-parseArg ('i':'n':'c':' ':xs) = inc (chain reads xs :: [Int])
+parseArg ('p':'u':'s':'h':' ':xs) = push (read xs :: Integer)
+parseArg ('i':'n':'c':' ':xs) = inc (chain reads xs :: [Integer])
 
 chain :: (s -> [(a, s)]) -> s -> [a]
 chain f s = case f s of
