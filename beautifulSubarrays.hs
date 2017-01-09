@@ -80,7 +80,9 @@ Array a = [2, 5, 4, 9] has no distinct beautiful subarrays with exactly m = 3 od
 
 import Data.List
 
--- note that this is brute force and only passes 5/14 tests
+subseqs ls = [t | i <- inits ls, t <- tails i, not $ null t]
+
+-- note that this is brute force and only passes 5/14 tests. use subseqs ^
 beautifulSubarrays :: [Int] -> Int -> Int
 beautifulSubarrays a m = length $ filter (\l -> length l == m) subarrays
   where subarrays = map (filter odd) $ tail $ filter (flip isInfixOf $ numbers') $ subsequences numbers'
