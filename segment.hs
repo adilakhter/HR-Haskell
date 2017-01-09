@@ -57,9 +57,11 @@ The subarrays of size x = 3 are {2, 5, 4}, {5, 4, 6}, and {4, 6, 8}. The respect
 
 import Data.List
 
+subseqs ls = [t | i <- inits ls, t <- tails i, not $ null t]
+
 -- this problem is broken on HR
 subsequence :: Int -> [Int] -> [[Int]]
-subsequence x arr  = filter ((==x) . length) $ filter (flip isInfixOf $ arr) $ subsequences arr
+subsequence x arr  = filter ((==x) . length) $ subseqs arr
 getMin = foldl min (maxBound :: Int)
 
 getMax = foldl max (minBound :: Int)
