@@ -43,10 +43,13 @@ Explanation 1
 
 import Data.List
 
+subseqs ls = [t | i <- inits ls, t <- tails i, not $ null t]
+
+-- note that this is brute force and only passes 2/10 tests. use subseqs ^
 substring y = tail $ filter (flip isInfixOf $ y) $ subsequence y
 subsequence = tail . subsequences
 
--- note that this is brute force and only passes 2/10 tests
+
 longestSubsequence x y =
   let x' = subsequence x
       y' = substring y
