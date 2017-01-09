@@ -64,7 +64,8 @@ All six of the above subarrays have products less than k = 7, so the function re
 -}
 import Data.List
 
--- note that this is brute force and only passes 3/10 tests
+subseqs ls = [t | i <- inits ls, t <- tails i, not $ null t]
+-- note that this is brute force and only passes 3/10 tests. use subseqs ^
 count numbers k = length $ filter (<k') subarrays
   where subarrays =  map product $ tail $ filter (flip isInfixOf $ numbers') $ subsequences numbers'
         numbers' = map toInteger numbers
