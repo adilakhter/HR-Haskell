@@ -130,25 +130,42 @@ There are n = 5 articles described as intellectual = [1, 4, 2, 5, 3] and pages =
 -}
 
 import Data.List
+import Data.Ratio
 
-orderIntellectualValueRatios :: (Fractional a, Ord a) =>
-  (a, Int) -> (a, Int) -> Ordering
-orderIntellectualValueRatios (ratio1, i1) (ratio2, i2) =
-  compare ratio1 ratio2
-  
+intellectual = [1, 4, 2, 5, 3]
+pages = [2, 6, 4, 7, 1]
+
+-- [4,12,8,14,2]
+-- (1/4, 1), (1/3, 4), (1/4, 2), (5/14, 5), (3/2, 3)
+-- (1/4, 1), (1/4, 2), (1/3, 4), (5/14, 5), (3/2, 3)
+
+pageLimit = 3
+
+orderIntellectualValueRatios :: (Ord a, Integral a) =>
+  (Ratio a, Int) -> (Ratio a, Int) -> Ordering
+-- orderIntellectualValueRatios (ratio1, i1) (ratio2, i2) =
+--   compare ratio1 ratio2
+orderIntellectualValueRatios (ratio1, i1) (ratio2, i2) 
+  | ratio1 == ratio2 && i1 < i2 = LT
+  | ratio1 == ratio2 && i2 > i1 = GT
+  | otherwise = compare ratio1 ratio2
+
+-- remove :: (Eq a) => a -> [a] -> Maybe
 
 readingArticles :: [Int] -> [Int] -> Int -> Int
 readingArticles intellectual pages p =
   let
     twoPages = fmap (*2) pages
-    intellectualValueRatios :: (Fractional a, Ord a) => [(a, Int)]
-    intellectualValueRatios = zipWith (\i p -> (2.5, i)) intellectual twoPages
-    srtd :: (Fractional a, Ord a) => [(a, Int)]
-    srtd = sortBy orderIntellectualValueRatios intellectualValueRatios
-    dailyReading :: (Fractional a, Ord a) => [(a, Int)]
+    intellectualValueRatios :: [(Ratio Int, Int)]
+    intellectualValueRatios = zipWith (\i p -> (i % p, i)) intellectual twoPages
+    srtd :: [(Ratio Int, Int)]
+    srtd = reverse $ sortBy orderIntellectualValueRatios intellectualValueRatios
+    dailyReading :: [(Ratio Int, Int)]
     dailyReading = take p srtd
     totalIntellectualValue :: Int
-    totalIntellectualValue = foldl (\s tup -> fst tup + s) 0 dailyReading
+    totalIntellectualValue = foldl (\s tup -> snd tup + s) 0 dailyReading
   in
     totalIntellectualValue
+
+example = readingArticles intellectual pages pageLimit
 
