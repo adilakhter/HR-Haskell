@@ -108,6 +108,7 @@ Thus, the function returns 3 as the answer.
 
 import Data.List
 
+-- 7/14 tests passed
 subsequence :: [Int] -> Int -> [[Int]]
 subsequence a m = filter ((==m) . length) $ subsequences a
 
