@@ -55,4 +55,3 @@ palindrome' xs = p [] xs xs
 
 -- 11/13 tests pass         
 countPalindromes s = length $ filter palindrome $ subseqs s
-
