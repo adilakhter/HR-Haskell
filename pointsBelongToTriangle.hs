@@ -110,4 +110,5 @@ pointsBelongToTriangle x1 y1 x2 y2 x3 y3 p1 q1 p2 q2 =
     (True, False, False) -> 1
     (_,_,True) -> 0
     
-
+t2 :: Triangle
+t2 = makeTriangle [[3,1,1],[7,1,1],[5,5,1]]

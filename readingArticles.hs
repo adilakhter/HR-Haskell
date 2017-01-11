@@ -127,10 +127,6 @@ Explanation 2
 
 There are n = 5 articles described as intellectual = [1, 4, 2, 5, 3] and pages = [2, 6, 4, 7, 1], and you're able to read a maximum of p = 13 pages per day. The best approach is to read the third and fifth articles twice, which means you'd read 2 · pages2 + 2 · pages4 = 2 · 4 + 2 · 1 = 10 pages and and gain a total intellectual value of intellectual2 + intellectual4 = 2 + 3 = 5. We then return 5 as our answer.
 
--}
-
-import Data.List
-import Data.Ratio
 
 intellectual = [1, 4, 2, 5, 3]
 pages = [2, 6, 4, 7, 1]
@@ -167,5 +163,27 @@ readingArticles intellectual pages p =
   in
     totalIntellectualValue
 
-example = readingArticles intellectual pages pageLimit
+-}
+
+import Data.Array
+
+optimize :: [Int]   -- values 
+           -> [Int] -- nonnegative weights
+           -> Int   -- maximum
+           -> Int   -- output
+optimize vs ws maxW = m!(numItems-1, maxW)
+  where numItems = length vs
+        m = array ((-1,0), (numItems-1, maxW)) $
+              [((-1,w), 0) | w <- [0 .. maxW]] ++
+              [((i,0), 0) | i <- [0 .. numItems-1]] ++
+              [((i,w), best) 
+                  | i <- [0 .. numItems-1]
+                  , w <- [1 .. maxW]
+                  , let best
+                          | ws!!i > w  = m!(i-1, w)
+                          | otherwise = max (m!(i-1, w)) 
+                                            (m!(i-1, w - ws!!i) + vs!!i)
+              ]
+
+readingArticles intellectual pages p = optimize intellectual (map (*2) pages) p
 
