@@ -52,12 +52,6 @@ Add k = 286 to every element in the inclusive range [1, 1], resulting in list = 
 Add k = 882 to every element in the inclusive range [4, 4], resulting in list = {286, 603, 603, 882}.
 We then print the maximum value in the final list, 882, as our answer.
 
-  let inputs = fmap (getStrings . snd) tups
-      args = fmap (head . getInts . fst) tups
-      app (arg,input) = map (convert arg) input
-      outputs = map app $ zip args inputs
-  mapM_ (putStrLn . output) $ map (foldr xor False) outputs
-
 -}
 
 import Control.Monad
