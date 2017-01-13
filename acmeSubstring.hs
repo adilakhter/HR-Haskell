@@ -34,18 +34,48 @@ import Text.Regex.Base
 import Text.Regex
 import qualified Data.ByteString.Char8 as BS
 
+import           Control.Applicative
+import           Data.Monoid ((<>))
+
 {-
-asterisk = mkRegex "*"
 
 firstOccurrence :: BS.ByteString -> BS.ByteString -> Int
 firstOccurrence a  b =
   let b' = BS.unpack b
-      b'' = BS.pack $ subRegex (mkRegex "*") b' "[:lower:]"
+      b'' = BS.pack $ subRegex (mkRegex ".*") b' "[:lower:]"
   in fst $ (a =~ b'' :: (Int , Int))
 -}
 
+globToRegex :: BS.ByteString -> BS.ByteString
+globToRegex bs = BS.pack ("^" <> globToRegex' (BS.unpack bs) <> "$")
+
+globToRegex' :: String -> String
+globToRegex' ""             = ""
+globToRegex' ('*':cs)       = ".*" ++ globToRegex' cs
+globToRegex' ('?':cs)       = '.' : globToRegex' cs
+globToRegex' ('[':'!':c:cs) = "[^" ++ c : charClass cs
+globToRegex' ('[':c:cs)     = '['  :  c : charClass cs
+globToRegex' ('[':_)        = error "unterminated character class"
+globToRegex' (c:cs)         = escape c ++ globToRegex' cs
+
+escape :: Char -> String
+escape c | c `elem` regexChars = '\\' : [c]
+         | otherwise = [c]
+    where
+      regexChars :: [Char]
+      regexChars = "\\+()^$.{}]|"
+
+charClass :: String -> String
+charClass (']':cs) = ']' : globToRegex' cs
+charClass (c:cs)   = c : charClass cs
+charClass []       = error "unterminated character class"
+
+
 firstOccurrence :: BS.ByteString -> BS.ByteString -> Int
-firstOccurrence a  b = fst $ (a =~ b :: (Int , Int))
+firstOccurrence a  b = out where
+  b' = globToRegex b
+  out = fst $ (a =~ b :: (Int , Int))
+
 
 main = do
     _a <- BS.getLine
