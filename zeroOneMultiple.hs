@@ -23,33 +23,25 @@ Sample Output:
 
 import Data.List
 
-  
-primeFactors n =
-  case factors of
-    [] -> [n]
-    _  -> factors ++ primeFactors (n `div` (head factors))
-  where factors = take 1 $ filter (\x -> (n `mod` x) == 0) [2 .. n-1]
+--http://stackoverflow.com/questions/28268786/how-to-solve-zero-one-multiple-coding-solution
 
-bins :: Int -> [Int]
-bins 1 = [0,1]
-bins n = let
-  b = bins (n-1)
-  in nub $ b ++ [ 10*old + new | old <- b, new <- [0,1]]
+updateBins :: [Int] -> [Int]
+updateBins b = nub $ b ++ [ 10*old + new | old <- b, new <- [0,1]]
 
 isBin n = and $ map ((flip elem) "01") $ show n
 
-works n order p = elem (n*p `mod` (10^order)) $ bins n
-
-foo n order l = let
-  l' = filter (works n order) l
-  chk = filter isBin $ map (*n) l
-  in if (length chk == 2) then chk else foo n (order +1) (bar l')
+works n order bins p = elem (n*p `mod` (10^order)) bins
 
 bar l = [i+ 10*j | i <- l, j <- [0..9]]
 
+foo n order bins l = let
+  l' = filter (works n order bins) l
+  chk = filter isBin $ map (*n) l
+  in if (length chk == 2) then chk else foo n (order +1) (updateBins bins) (bar l')
+
 get :: Int -> Int
 get n = let
-  l = foo n 1 [0..9]
+  l = foo n 1 [0,1] [0..9]
   in l !! 1
 
 zero_One num = show $ get num
