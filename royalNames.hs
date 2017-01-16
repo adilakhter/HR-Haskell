@@ -74,7 +74,12 @@ getSortedList names = let
   in map output $ sort names'
 
   
+romanToInt :: String -> Int
+romanToInt = fst
+                  . foldr (\p (t,s) -> if p >= s then (t+p,p) else (t-p,p)) (0,0)
+                  . map (fromJust . flip lookup (zip "IVXLCDM" [1,5,10,50,100,500,1000]))
 
+                  
 --https://www.cs.york.ac.uk/ftpdir/pub/haskell/contrib/Roman.hs
 numerals = [ ('I',   1), ('V',   5), ('X',  10), ('L',  50),
              ('C', 100), ('D', 500), ('M',1000) ]
