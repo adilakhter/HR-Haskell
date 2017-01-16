@@ -42,6 +42,7 @@ There are 15 possible substrings of s, the following 7 of which are palindromes:
 -}
 
 import Data.List
+import Control.Applicative
 
 subseqs ls = [t | i <- inits ls, t <- tails i, not $ null t]
 
@@ -52,6 +53,8 @@ palindrome' xs = p [] xs xs
    where p rev (x:xs) (_:_:ys) = p (x:rev) xs ys
          p rev (x:xs) [_] = rev == xs
          p rev xs [] = rev == xs
+
+palindrome'' = (==) <*> reverse
 
 -- 11/13 tests pass         
 countPalindromes s = length $ filter palindrome $ subseqs s
