@@ -44,6 +44,8 @@ compress (x:xs) = x : (compress $ dropWhile (== x) xs)
 
 aeiou = (=="aeiou") . compress
 
-findMax = maximum . map (length) . filter aeiou . subseq
+longestSubsequence l = let
+  l' = map (length) . filter aeiou $ subseq l
+  in if l' == [] then 0 else maximum l'
 
-longestSubsequence = show . findMax
+
