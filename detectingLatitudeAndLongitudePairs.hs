@@ -88,8 +88,8 @@ tuple = do
   return (a,b)
 
 float = fmap rd $ (++) <$> integer <*> decimal
-    where rd      = read :: String -> Float
-          decimal = option "" $ (:) <$> char '.' <*> number
+  where rd      = read :: String -> Float
+        decimal = option "" $ (:) <$> char '.' <*> number
 
 valid (lat, long) = let
   a = -90.0 <= lat && lat <= 90.0
