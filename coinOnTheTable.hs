@@ -45,25 +45,48 @@ In the first example, no letters need to be changed. In the second example, chan
 import Data.Tree
 import qualified Data.Vector as V
 
+--data Tree a = Tree a [Tree a]
+    
 type Board = V.Vector Char
 -- ((x-val,y-val), letter, n changes, time to *
 type Cell = ((Int,Int), Char, Int, Int)
 type Route = Tree Cell
 
+-- primitives and Rose tree comonad implementation
 -- cell access 
 thd (_, _, y, _) = y
 fth (_, _, _, z) = z
 
--- extend is the categorical dual to canonical (=<<)
+-- extend is the categorical dual to bind (>>=)
 (=>>) :: Tree a -> (Tree a -> b) -> Tree b
 (=>>) t f = unfoldTree (\a@(Node _ z) -> (f a, z)) t
 
--- categorical dual to canonical "join"
+-- duplicate is the categorical dual to join
 duplicate :: Tree a -> Tree (Tree a)
 duplicate t = t =>> id
 
--- identity for coflatMapTree
+-- identity for extend
 extract :: Tree a -> a
 extract (Node r _) = r
 
+-- board-related functions
+
+width = 2
+
+board :: Board
+board = V.fromList ['R','D','*','L']
+
+-- board is stored in row-major order, i and j are zero-indexed
+getLabel :: (Int,Int) -> Char
+getLabel (i,j) = let
+  index = i*width + j
+  in board V.! index
+  
+mkCell :: (Int,Int) -> Cell
+mkCell tup = let
+  c = getLabel tup
+  in (tup, c, 0, -1)
+  
+goal :: Route
+goal = Node ((1,0), '*', 0, 0) []
 
