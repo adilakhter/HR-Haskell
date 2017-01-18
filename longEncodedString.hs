@@ -60,28 +60,6 @@ Sample Input 3
 Sample Output 3
 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 5 1 1 1
 
-double = do
-  n <- numbers
-  char '#'
-  
-  
-encoded :: Parser (Int,Int)
-try (string "camel") <|> (string "cat")
-
-repeated :: Parser (Int,Int)
-repeated = do
-  en <- encoded
-  char '('
-  r <- number
-  char ')'
-  let rd read :: String -> Int
-  return fmap ((+) . rd) en
-
-single :: Parser Int
-single = let
-  rd = read :: String -> Int
-  in rd $ oneOf "123456789"
-
 -}
 
 import Control.Monad
@@ -107,9 +85,9 @@ jz = do
 
 az :: Parser (Int,Int)
 az = do
-  l <- try jz <|> ai
+  c <- try jz <|> ai
   let rd = read :: String -> Int
-  return (rd l,1)
+  return (rd c,1)
 
 repeated :: Parser (Int,Int)
 repeated = do
