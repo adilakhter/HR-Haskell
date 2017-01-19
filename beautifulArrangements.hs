@@ -82,7 +82,7 @@ d `divides` n = n `mod` d == 0
 
 apply soln = let
   outputs = map snd soln
-  applied = map (\i -> (i,fromMaybe 1 $ lookup i soln)) outputs
+  applied = map (\i -> (i,fromMaybe 0 $ lookup i soln)) outputs
   in applied
 
 unique :: Beaut -> Bool
