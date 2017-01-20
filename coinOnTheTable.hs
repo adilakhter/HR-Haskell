@@ -43,8 +43,8 @@ In the first example, no letters need to be changed. In the second example, chan
 -}
 
 import Data.Tree
+import Data.List
 import Data.Maybe
-import Prelude hiding (fst,snd)
 import Control.Monad (join)
 import qualified Data.Vector as V
 
@@ -56,32 +56,12 @@ type Cell = ((Int,Int), Char, Int, Int)
 -- Tree Cell [u, d, l, r]
 type Routes = Tree Cell
 
-getNeighbors :: Cell -> [Cell]
-getNeighbors cell = let
-  (i,j) = fst cell
-  r = getCell (i,j+1)
-  d = getCell (i+1,j)
-  l = getCell (i,j-1)
-  u = getCell (i-1,j)
-  in catMaybes [r,d,l,u]
-
-iter :: Int -> Cell -> Routes
-iter 0 cell = Node cell []
-iter k cell = let
-  neighbors = getNeighbors cell
-  in Node cell $ map (iter (k-1)) neighbors
-
-fillTree :: Board -> Int -> Routes
-fillTree board k = let
-  start = fromJust $ getCell (0,0)
-  in if (k==0) then Node start [] else iter k start
-
 -- primitives and Rose tree comonad implementation
 -- cell access
-fst (w, _, _, _) = w
-snd (_, x, _, _) = x
-thd (_, _, y, _) = y
-fth (_, _, _, z) = z
+getAddress (w, _, _, _) = w
+getLabel (_, x, _, _) = x
+getChanges (_, _, y, _) = y
+getDepth (_, _, _, z) = z
 
 -- extend is the categorical dual to bind (>>=)
 (=>>) :: Tree a -> (Tree a -> b) -> Tree b
@@ -107,33 +87,88 @@ board = V.fromList ['R','D','*','L']
 readBoard :: [[Char]] -> Board
 readBoard l = V.fromList $ join l
 
-
-outOfBounds :: Cell -> Bool
-outOfBounds cell = let
-  (i,j) = fst cell
-  vert = (i>=n) || (i<0)
-  horz = (j>=m) || (j<0)
-  in vert || horz
-
 -- board is stored in row-major order, i and j are zero-indexed
-getLabel :: (Int,Int) -> Char
-getLabel (i,j) = let
+
+getLabel' :: (Int,Int) -> Char
+getLabel' (i,j) = let
   index = i*width + j
   in board V.! index
 
-getCell :: (Int,Int) -> Maybe Cell
-getCell tup = let
-  c = getLabel tup
-  cell = (tup, c, 0, 0)
-  in if outOfBounds cell then Nothing else Just cell
+getCell :: Int -> (Int,Int) -> Cell
+getCell k address = let
+  c = getLabel' address
+  cell  = (address, c, 0, k)
+  cell' = (address, c, 199, k)
+  out = outOfBounds address
+  in case (k,c,out) of
+    (0,'*',_) -> cell
+    (0,_  ,_) -> cell'
+    (k,_  ,False) -> cell
+    (k,_  ,True ) -> cell'  
+ 
+getIndex :: Cell -> Int
+getIndex cell = case cell of
+  (_,'R',_,_) -> 0
+  (_,'D',_,_) -> 1
+  (_,'L',_,_) -> 2
+  (_,'U',_,_) -> 3
   
-goal :: Routes
-goal = Node ((1,0), '*', 3, 0) []
+outOfBounds :: (Int,Int) -> Bool
+outOfBounds (i,j) = let
+  vert = (i>=n) || (i<0)
+  horz = (j>=m) || (j<0)
+  in vert || horz
+  
+getNeighbors :: Int -> Cell -> [Cell]
+getNeighbors k cell = let
+  (i,j) = getAddress cell
+  r = getCell k (i,j+1)
+  d = getCell k (i+1,j)
+  l = getCell k (i,j-1)
+  u = getCell k (i-1,j)
+  in [r,d,l,u]
 
-goal1 :: Routes
-goal1 = Node ((1,1), 'L', 2, 0)
-             [ Node ((0,1), 'D', 3, 0) [], --U
-               Node ((1,1), 'O', 3, 0) [], --D
-               Node ((1,1), '*', 3, 0) [], --L
-               Node ((1,1), 'O', 3, 0) []  --R
-             ]
+iter :: Int -> Cell -> Routes
+iter (-1) cell = Node cell []
+iter k cell = let
+  neighbors = getNeighbors k cell
+  in Node cell $ map (iter (k-1)) neighbors
+
+fillTree :: Board -> Int -> Routes
+fillTree board k = let
+  start = getCell k (0,0)
+  in if (k==0) then Node start [] else iter (k-1) start
+
+hasStar :: Routes -> Bool
+hasStar (Node cell routes) = case cell of
+  (_,'*',_,0) -> True
+  (_,_  ,_,0) -> False
+  otherwise -> or $ map hasStar routes
+
+prune :: Routes -> Cell
+prune (Node cell routes) = let
+  routes' = filter hasStar routes
+  in case cell of
+    (_,'*',_,0) -> cell
+    (loc,label,changes,k) | routes' == [] -> (loc,'O',changes,k)
+    otherwise -> cell
+
+update :: Routes -> Cell
+update (Node cell []) = cell
+update (Node cell routes) = let
+  routes' = map update routes
+  changes = map getChanges routes'
+  minCell = routes' !! (fromJust $ findIndex (==minimum changes) changes)
+  oldCell = routes' !! (getIndex cell)
+  d = getDepth cell
+  add = getAddress cell
+  cell' = (add,getLabel oldCell,getChanges oldCell,getDepth cell)
+  cell'' = (add,getLabel minCell,getChanges minCell + 1,getDepth cell)
+  in if (getChanges minCell) < (getChanges oldCell) then cell'' else cell'
+ 
+
+  
+pruneTree :: Routes -> Routes
+pruneTree routes = routes =>> prune
+
+routes = fillTree board 3
