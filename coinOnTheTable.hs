@@ -43,17 +43,43 @@ In the first example, no letters need to be changed. In the second example, chan
 -}
 
 import Data.Tree
+import Data.Maybe
+import Prelude hiding (fst,snd)
+import Control.Monad (join)
 import qualified Data.Vector as V
 
 --data Tree a = Tree a [Tree a]
     
 type Board = V.Vector Char
--- ((x-val,y-val), letter, n changes, time to *
+-- ((x-val,y-val), letter, n changes, depth
 type Cell = ((Int,Int), Char, Int, Int)
-type Route = Tree Cell
+-- Tree Cell [u, d, l, r]
+type Routes = Tree Cell
+
+getNeighbors :: Cell -> [Cell]
+getNeighbors cell = let
+  (i,j) = fst cell
+  r = getCell (i,j+1)
+  d = getCell (i+1,j)
+  l = getCell (i,j-1)
+  u = getCell (i-1,j)
+  in catMaybes [r,d,l,u]
+
+iter :: Int -> Cell -> Routes
+iter 0 cell = Node cell []
+iter k cell = let
+  neighbors = getNeighbors cell
+  in Node cell $ map (iter (k-1)) neighbors
+
+fillTree :: Board -> Int -> Routes
+fillTree board k = let
+  start = fromJust $ getCell (0,0)
+  in if (k==0) then Node start [] else iter k start
 
 -- primitives and Rose tree comonad implementation
--- cell access 
+-- cell access
+fst (w, _, _, _) = w
+snd (_, x, _, _) = x
 thd (_, _, y, _) = y
 fth (_, _, _, z) = z
 
@@ -72,21 +98,42 @@ extract (Node r _) = r
 -- board-related functions
 
 width = 2
+n = 2
+m = 2
 
 board :: Board
 board = V.fromList ['R','D','*','L']
+
+readBoard :: [[Char]] -> Board
+readBoard l = V.fromList $ join l
+
+
+outOfBounds :: Cell -> Bool
+outOfBounds cell = let
+  (i,j) = fst cell
+  vert = (i>=n) || (i<0)
+  horz = (j>=m) || (j<0)
+  in vert || horz
 
 -- board is stored in row-major order, i and j are zero-indexed
 getLabel :: (Int,Int) -> Char
 getLabel (i,j) = let
   index = i*width + j
   in board V.! index
-  
-mkCell :: (Int,Int) -> Cell
-mkCell tup = let
-  c = getLabel tup
-  in (tup, c, 0, -1)
-  
-goal :: Route
-goal = Node ((1,0), '*', 0, 0) []
 
+getCell :: (Int,Int) -> Maybe Cell
+getCell tup = let
+  c = getLabel tup
+  cell = (tup, c, 0, 0)
+  in if outOfBounds cell then Nothing else Just cell
+  
+goal :: Routes
+goal = Node ((1,0), '*', 3, 0) []
+
+goal1 :: Routes
+goal1 = Node ((1,1), 'L', 2, 0)
+             [ Node ((0,1), 'D', 3, 0) [], --U
+               Node ((1,1), 'O', 3, 0) [], --D
+               Node ((1,1), '*', 3, 0) [], --L
+               Node ((1,1), 'O', 3, 0) []  --R
+             ]
