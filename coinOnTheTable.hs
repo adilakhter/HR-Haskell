@@ -40,6 +40,14 @@ Sample output #2:
  
 Explanation :
 In the first example, no letters need to be changed. In the second example, changing the letter of cell (1,1) to ‘D’ achieves the desired result.
+
+Sample input #2:
+3 3 4  
+RLL
+RDD
+*LR
+
+
 -}
 
 import Data.Tree
@@ -48,63 +56,43 @@ import Data.Maybe
 import Control.Monad (join)
 import qualified Data.Vector as V
 
---data Tree a = Tree a [Tree a]
-    
-type Board = V.Vector Char
--- ((x-val,y-val), letter, n changes, depth
-type Cell = ((Int,Int), Char, Int, Int)
--- Tree Cell [u, d, l, r]
-type Routes = Tree Cell
 
--- primitives and Rose tree comonad implementation
--- cell access
-getAddress (w, _, _, _) = w
-getLabel (_, x, _, _) = x
-getChanges (_, _, y, _) = y
-getDepth (_, _, _, z) = z
 
--- extend is the categorical dual to bind (>>=)
+-- Rose tree comonad implementation
+
+-- categorical dual to bind (>>=)
 (=>>) :: Tree a -> (Tree a -> b) -> Tree b
 (=>>) t f = unfoldTree (\a@(Node _ z) -> (f a, z)) t
 
--- duplicate is the categorical dual to join
-duplicate :: Tree a -> Tree (Tree a)
-duplicate t = t =>> id
+-- categorical dual to join
+cojoin :: Tree a -> Tree (Tree a)
+cojoin t = t =>> id
 
--- identity for extend
-extract :: Tree a -> a
-extract (Node r _) = r
+--categorical dual to return
+coreturn :: Tree a -> a
+coreturn (Node r _) = r
 
--- board-related functions
 
-width = 2
-n = 2
-m = 2
+type Board = V.Vector Char
+-- (address, label, n changes, depth)
+type Cell = ((Int,Int), Char, Int, Int)
+-- Tree Cell [r,d,l,u]
+type Routes = Tree Cell
+
+n = 3
+m = 3
+k = 4
 
 board :: Board
-board = V.fromList ['R','D','*','L']
+board = V.fromList "RLLRDD*LR"
 
-readBoard :: [[Char]] -> Board
-readBoard l = V.fromList $ join l
+routes = fillTree board k
 
--- board is stored in row-major order, i and j are zero-indexed
-
-getLabel' :: (Int,Int) -> Char
-getLabel' (i,j) = let
-  index = i*width + j
-  in board V.! index
-
-getCell :: Int -> (Int,Int) -> Cell
-getCell k address = let
-  c = getLabel' address
-  cell  = (address, c, 0, k)
-  cell' = (address, c, 199, k)
-  out = outOfBounds address
-  in case (k,c,out) of
-    (0,'*',_) -> cell
-    (0,_  ,_) -> cell'
-    (k,_  ,False) -> cell
-    (k,_  ,True ) -> cell'  
+-- board-related functions
+getChanges (_, _, y, _) = y
+getAddress (w, _, _, _) = w
+getDepth (_, _, _, z) = z
+getLabel (_, x, _, _) = x
  
 getIndex :: Cell -> Int
 getIndex cell = case cell of
@@ -112,6 +100,8 @@ getIndex cell = case cell of
   (_,'D',_,_) -> 1
   (_,'L',_,_) -> 2
   (_,'U',_,_) -> 3
+  (_,'*',_,_) -> -1
+  (_,'O',_,_) -> -1
   
 outOfBounds :: (Int,Int) -> Bool
 outOfBounds (i,j) = let
@@ -128,6 +118,57 @@ getNeighbors k cell = let
   u = getCell k (i-1,j)
   in [r,d,l,u]
 
+-- solver
+index2Label i = case i of
+  0 -> 'R'
+  1 -> 'D'
+  2 -> 'L'
+  3 -> 'U'
+  
+update :: Routes -> Cell
+update (Node cell []) = cell
+update (Node cell routes) = let
+  routes' = map update routes
+  changes = map getChanges routes'
+  d = getDepth cell
+  a = getAddress cell
+  i = getIndex cell
+  i' = fromJust $ findIndex (==minimum changes) changes
+  oldCell = routes' !! i
+  minCell = routes' !! i'
+  cell' = (a,index2Label i,getChanges oldCell,d)
+  cell'' = (a,index2Label i',getChanges minCell + 1,d)
+  output = if (getChanges minCell) < (getChanges oldCell) then cell'' else cell'
+  in if i==(-1) then cell else output
+
+hasStar :: Routes -> Bool
+hasStar (Node cell routes) = case cell of
+  (_,'*',_,0) -> True
+  (_,_  ,_,0) -> False
+  otherwise -> or $ map hasStar routes
+  
+--IO
+readBoard :: [[Char]] -> Board
+readBoard l = V.fromList $ join l
+
+--put into main
+getLabel' :: (Int,Int) -> Char
+getLabel' (i,j) = let
+  index = i*m + j
+  in if outOfBounds (i,j) then 'O' else board V.! index
+
+getCell :: Int -> (Int,Int) -> Cell
+getCell k address = let
+  c = getLabel' address
+  cell  = (address, c, 0, k)
+  cell' = (address, c, 199, k) --fix?
+  out = outOfBounds address
+  in case (k,c,out) of
+    (0,'*',_) -> cell
+    (0,_  ,_) -> cell'
+    (k,_  ,False) -> cell
+    (k,_  ,True ) -> cell'
+    
 iter :: Int -> Cell -> Routes
 iter (-1) cell = Node cell []
 iter k cell = let
@@ -139,36 +180,8 @@ fillTree board k = let
   start = getCell k (0,0)
   in if (k==0) then Node start [] else iter (k-1) start
 
-hasStar :: Routes -> Bool
-hasStar (Node cell routes) = case cell of
-  (_,'*',_,0) -> True
-  (_,_  ,_,0) -> False
-  otherwise -> or $ map hasStar routes
-
-prune :: Routes -> Cell
-prune (Node cell routes) = let
-  routes' = filter hasStar routes
-  in case cell of
-    (_,'*',_,0) -> cell
-    (loc,label,changes,k) | routes' == [] -> (loc,'O',changes,k)
-    otherwise -> cell
-
-update :: Routes -> Cell
-update (Node cell []) = cell
-update (Node cell routes) = let
-  routes' = map update routes
-  changes = map getChanges routes'
-  minCell = routes' !! (fromJust $ findIndex (==minimum changes) changes)
-  oldCell = routes' !! (getIndex cell)
-  d = getDepth cell
-  add = getAddress cell
-  cell' = (add,getLabel oldCell,getChanges oldCell,getDepth cell)
-  cell'' = (add,getLabel minCell,getChanges minCell + 1,getDepth cell)
-  in if (getChanges minCell) < (getChanges oldCell) then cell'' else cell'
- 
-
   
-pruneTree :: Routes -> Routes
-pruneTree routes = routes =>> prune
-
-routes = fillTree board 3
+{-
+final s = let
+  possible = coreturn $ routes =>> hasStar
+-}
