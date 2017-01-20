@@ -59,7 +59,7 @@ Test Case #3:
     3      2                   2    1
 -}
 
-
+-- can be simplified to counting # of (one level deeper) leaf-labelled trees w a given fringe
 data Tree = Leaf Int | Fork Tree Tree deriving Show
 
 
