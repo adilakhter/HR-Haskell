@@ -69,6 +69,7 @@ byLen s t | (length s) > (length t) = GT
           | (length s) > (length t) = LT
           | otherwise = EQ
 
+-- only handes one swap of suffix kind
 test :: String -> String          
 test s = let
   magics = filter isMagical $ subseqs s
@@ -78,7 +79,9 @@ test s = let
 
 swaps :: String -> String -> String -> String
 swaps s longest biggest = let
-  long = reverse $ map fst $ dropWhile (\(a,b) -> a==b) $ zip (reverse longest) (reverse biggest) --may not be suffix or prefix
+  l = length longest
+  b = length biggest
+  long = take (l-b) longest
   big = biggest ++ long
   s' = s \\ longest
   first = map fst $ takeWhile (\(a,b) -> a==b) $ zip s' s
