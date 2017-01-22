@@ -109,3 +109,12 @@ submat3 = submatrix r13 c13 r23 c23 mat2
 med4 = queryMedianOneIndexed r14 c14 r24 c24 mat2
 submat4 = submatrix r14 c14 r24 c24 mat2
 submatFlat4 = flatSubmatrix r14 c14 r24 c24 mat2
+
+
+-- 4
+-- 1 2 3 4
+-- 5 6 7 8
+-- 9 10 11 12
+-- 13 14 15 16
+-- 1
+-- 2 3 2 3
