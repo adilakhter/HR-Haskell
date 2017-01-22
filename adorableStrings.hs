@@ -64,20 +64,39 @@ This means ret[5] = 8.
 We then return ret = [0, 0, 0, 0, 1, 8].
  -}
 
-import Data.Ratio
-import Text.Regex (subRegex, mkRegex)
-import Text.Regex.Posix
+import Control.Monad
+import Text.Parsec
+import Data.Array
+import Data.List
+import Data.Foldable (toList)
+import Control.Applicative hiding ((<|>),many)
+import Data.Array.Base (unsafeAt)
+
+type Parser = Parsec String ()
 
 subseqs ls = [t | i <- inits ls, t <- tails i, not $ null t]
 
-parse :: String -> Rational
-parse str = let
-  (_, _, _, [a1, a2, b1, b2]) = str =~ "([0-9]*)/([0-9]*)\\+([0-9]*)/([0-9]*)" :: (String,String,String,[String])
-  fracA = (read a1 :: Integer) % (read a2 :: Integer)
-  fracB = (read b1 :: Integer) % (read b2 :: Integer)
-  in fracA + fracB
 
-output :: Rational -> String
-output r = subRegex (mkRegex " % ") (show r) "/"
+adorable :: Parser String
+adorable = do
+  lower
+  many $ lower <|> digit <|> char ':'
+  char '/'
+  many1 $ lower <|> digit
+  char '\\'
+  many1 lower
 
-fractionSum str =map (output . parse) str 
+check word = either (const False) (const True) $ parse adorable "" word
+
+count' word = filter check $ subseqs word
+
+  
+--adorableCount words = map count' words
+  
+  
+outputs = map count' ["w\\//a/b","w\\//a\\b","w\\/a\\b","w:://a\\b","w::/a\\b","w:/a\\bc::/12\\xyz"]
+
+
+by x y = (not $ isInfixOf x y) && (not $ isInfixOf y x)
+
+outputs' = nubBy by outputs
