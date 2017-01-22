@@ -1,7 +1,6 @@
 
 import Data.List
 
-
 zipWithIndex :: [a] -> [(Int, a)]
 zipWithIndex l = zip [1..] l
 
@@ -15,20 +14,22 @@ groupN :: Int -> [a] -> [[a]]
 groupN n l =
   foldr (folder n) [[]] $ zipWithIndex l
 
--- repetitionN :: Int -> String -> Bool
--- repetitionN n s =
---   let firstN = take n s
---       tail = drop n s
---   in foldr
+coprime :: Int -> Int -> Bool
+coprime x y = gcd x y == 1
 
--- reciprocal :: Int -> IO ()
--- reciprocal n = let
---   frac = 1 / (fromIntegral n)
---   fracString = show frac
---   (left, right) = splitAt 3 fracString
---   short = left ++ " " ++ take 1 right
---   in putStrLn $ short
+cycle :: 
 
+reciprocal :: Int -> IO ()
+reciprocal n
+  | coprime n 10 == False =
+    let
+      frac = 1 / (fromIntegral n)
+      fracString = show frac
+    in putStrLn fracString
+  | otherwise =
+    let
+      frac = 1 / (fromIntegral n)
+      
 
 x = [1..20]
 xGrouped = groupN 3 x
