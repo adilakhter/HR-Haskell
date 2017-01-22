@@ -62,12 +62,35 @@ word[6..15] = c::/12\xyz
 This means ret[5] = 8.
  
 We then return ret = [0, 0, 0, 0, 1, 8].
+
+
+---
+
+Testcase 2: Wrong Answer
+Input [Download]
+4
+a/b\c/d\e:f:/1\g
+a/a\a/a\a:a:/a\a
+a/a
+a/a\a/a\a:b:/t9\xyz
+Your Output
+4
+3
+0
+7
+Expected Output [Download]
+4
+4
+0
+8
+
  -}
 
 import Control.Monad
-import Text.Parsec
+import Text.Parsec hiding (count)
 import Data.Array
 import Data.List
+import Data.Maybe
 import Data.Foldable (toList)
 import Control.Applicative hiding ((<|>),many)
 import Data.Array.Base (unsafeAt)
@@ -86,17 +109,21 @@ adorable = do
   char '\\'
   many1 lower
 
-check word = either (const False) (const True) $ parse adorable "" word
+check word = either (const False) (const True) $ parse (adorable <* eof) "" word
 
-count' word = filter check $ subseqs word
+count word = length $ nubBy (by word) $ filter check $ subseqs word
 
+by str x y = let
+  find x = fromMaybe 0 $ findSubstr str x
+  xf = find x
+  yf = find y
+  x' = (xf,xf -1 + length x)
+  y' = (yf,yf -1 + length y)
+  in x' == y'
+
+findSubstr :: Eq a => [a] -> [a] -> Maybe Int
+findSubstr str x = findIndex (isPrefixOf x) (tails str)
+
+adorableCount words = map (show . count) words
   
---adorableCount words = map count' words
-  
-  
-outputs = map count' ["w\\//a/b","w\\//a\\b","w\\/a\\b","w:://a\\b","w::/a\\b","w:/a\\bc::/12\\xyz"]
 
-
-by x y = (not $ isInfixOf x y) && (not $ isInfixOf y x)
-
-outputs' = nubBy by outputs
