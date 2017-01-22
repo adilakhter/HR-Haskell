@@ -53,8 +53,9 @@ RDD
 import Data.Tree
 import Data.List
 import Data.Maybe
-import Control.Monad (join)
+import Control.Monad (join, replicateM)
 import qualified Data.Vector as V
+import Text.Regex (splitRegex, mkRegex)
 
 
 
@@ -79,14 +80,8 @@ type Cell = ((Int,Int), Char, Int, Int)
 -- Tree Cell [r,d,l,u]
 type Routes = Tree Cell
 
-n = 3
-m = 3
-k = 4
 
-board :: Board
-board = V.fromList "RLLRDD*LR"
 
-routes = fillTree board k
 
 -- board-related functions
 getChanges (_, _, y, _) = y
@@ -103,21 +98,7 @@ getIndex cell = case cell of
   (_,'*',_,_) -> -1
   (_,'O',_,_) -> -1
   
-outOfBounds :: (Int,Int) -> Bool
-outOfBounds (i,j) = let
-  vert = (i>=n) || (i<0)
-  horz = (j>=m) || (j<0)
-  in vert || horz
   
-getNeighbors :: Int -> Cell -> [Cell]
-getNeighbors k cell = let
-  (i,j) = getAddress cell
-  r = getCell k (i,j+1)
-  d = getCell k (i+1,j)
-  l = getCell k (i,j-1)
-  u = getCell k (i-1,j)
-  in [r,d,l,u]
-
 -- solver
 index2Label i = case i of
   0 -> 'R'
@@ -148,40 +129,83 @@ hasStar (Node cell routes) = case cell of
   otherwise -> or $ map hasStar routes
   
 --IO
-readBoard :: [[Char]] -> Board
-readBoard l = V.fromList $ join l
+tokenize :: String -> [String]
+tokenize = splitRegex (mkRegex "[[:space:],]")
 
---put into main
-getLabel' :: (Int,Int) -> Char
-getLabel' (i,j) = let
-  index = i*m + j
-  in if outOfBounds (i,j) then 'O' else board V.! index
+getInts :: IO [Int]
+getInts = getLine >>= (\x -> return $ fmap (\x -> read x :: Int) $ tokenize x)
 
-getCell :: Int -> (Int,Int) -> Cell
-getCell k address = let
-  c = getLabel' address
-  cell  = (address, c, 0, k)
-  cell' = (address, c, 199, k) --fix?
-  out = outOfBounds address
-  in case (k,c,out) of
-    (0,'*',_) -> cell
-    (0,_  ,_) -> cell'
-    (k,_  ,False) -> cell
-    (k,_  ,True ) -> cell'
-    
-iter :: Int -> Cell -> Routes
-iter (-1) cell = Node cell []
-iter k cell = let
-  neighbors = getNeighbors k cell
-  in Node cell $ map (iter (k-1)) neighbors
+getBoard :: Int -> IO Board
+getBoard n = fmap (V.fromList . join) $ replicateM n getLine
 
-fillTree :: Board -> Int -> Routes
-fillTree board k = let
-  start = getCell k (0,0)
-  in if (k==0) then Node start [] else iter (k-1) start
 
+main :: IO ()
+main = do
+  [n,m,k] <- getInts
+  board <- getBoard n
+  let
+    -- build tree of possible routes
+    outOfBounds :: (Int,Int) -> Bool
+    outOfBounds (i,j) = let
+      vert = (i>=n) || (i<0)
+      horz = (j>=m) || (j<0)
+      in vert || horz
   
+    getLabel' :: (Int,Int) -> Char
+    getLabel' (i,j) = let
+      index = i*m + j
+      in if outOfBounds (i,j) then 'O' else board V.! index
+
+    getCell :: Int -> (Int,Int) -> Cell
+    getCell k address = let
+      c = getLabel' address
+      cell  = (address, c, 0, k)
+      cell' = (address, c, 199, k) --fix?
+      out = outOfBounds address
+      in case (k,c,out) of
+        (0,'*',_) -> cell
+        (0,_  ,_) -> cell'
+        (k,_  ,False) -> cell
+        (k,_  ,True ) -> cell'
+
+    iter :: Int -> Cell -> Routes    
+    iter (-1) cell = Node cell []
+    iter k cell = let
+      neighbors = getNeighbors k cell
+      in Node cell $ map (iter (k-1)) neighbors
+
+    getNeighbors :: Int -> Cell -> [Cell]
+    getNeighbors k cell = let
+      (i,j) = getAddress cell
+      r = getCell k (i,j+1)
+      d = getCell k (i+1,j)
+      l = getCell k (i,j-1)
+      u = getCell k (i-1,j)
+      in [r,d,l,u]
+
+    fillTree :: Board -> Int -> Routes
+    fillTree board k = let
+      start = getCell k (0,0)
+      in if (k==0) then Node start [] else iter (k-1) start
+
+    routes = fillTree board k
+    possible = hasStar routes
+    changes = getChanges $ update routes
+    output = if possible then changes else -1
+    
+  print output
+
+
+
+
 {-
 final s = let
   possible = coreturn $ routes =>> hasStar
+
+n = 3
+m = 3
+k = 4
+
+board :: Board
+board = V.fromList "RLLRDD*LR"
 -}
