@@ -59,34 +59,38 @@ The total cost for all items is: (1 − 0) + (3 − 3) + (3 − 2) + (2 − 0) +
  -}
 
 import Data.List
+import Control.Monad (replicateM)
 import qualified Data.Vector as V
+import Debug.Trace
 
-
-agg :: (V.Vector Int, [Int], Int) -> Int -> (V.Vector Int, [Int], Int)
-agg (discounts,stack,offset) next = let
-  values = [next | i <- [1..length $ takeWhile (\x -> next <= x) stack]]
-  indices = [offset +i - length values | i <- [1..length values]]
-  updates = V.fromList $ zip indices values
-  stack' = next : (dropWhile (\x -> next <= x) stack)
-  discounts' = V.update discounts updates
+agg :: (V.Vector Int, V.Vector (Int,Int), Int) -> Int -> (V.Vector Int, V.Vector (Int,Int), Int)
+agg (discounts,memory,offset) next | trace (show memory) False = undefined
+agg (discounts,memory,offset) next = let
+  indices = V.toList $ V.map fst $ V.filter (\(i,a) -> a >= next) memory
+  updates = zip indices [next,next..]
+  discounts' = discounts V.// updates
   offset' = offset+1
-  in if next > head stack then (discounts, next:stack, offset') else (discounts', stack', offset')
+  memory' =  V.snoc (V.filter (\(i,a) -> a < next) memory) (offset',next)
+  in (discounts', memory', offset')
 
-getDiscounts :: [Int] -> V.Vector Int
 getDiscounts prices = let
   discounts = V.fromList [0 | i <- [1..length prices]]
-  output = foldl' agg (discounts,[head prices],0) $ tail prices
-  fst' (a,_,_) = a
-  in fst' output
+  memory = V.fromList [(0,head prices)]
+  (discounts', memory', offset') = foldl' agg (discounts,memory,0) $ tail prices
+  price = sum prices - V.sum discounts'
+  noDiscount = V.toList $ V.map fst memory'
+  in (price, noDiscount)
   
-getFinalPrice prices = let
-  discounts = getDiscounts prices
-  noDiscount = V.toList $ V.findIndices (==0) discounts
-  prices' = [prices !! i - discounts V.! i | i <- [0 .. length prices -1]]
-  in (show $ sum prices', unwords $ map show noDiscount)
 
 finalPrice prices = do
-  let (price,noDiscount) = getFinalPrice prices
-  putStrLn price
-  putStrLn noDiscount
+  let (price,noDiscount) = getDiscounts prices
+  putStrLn $ show price
+  putStrLn $ unwords $ map show noDiscount
+
+getInt = readLn :: IO Int
+main = do
+  n <- getInt
+  prices <- replicateM n getInt
+  finalPrice prices
+
 
