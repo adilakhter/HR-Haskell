@@ -17,7 +17,7 @@ groupN n l =
 coprime :: Int -> Int -> Bool
 coprime x y = gcd x y == 1
 
-cycle :: 
+--cycle :: 
 
 reciprocal :: Int -> IO ()
 reciprocal n
