@@ -67,11 +67,9 @@ Each date has been converted to the format given in problem statement.
 
 import Control.Monad
 import Text.Parsec
-import Data.Array
 import Data.List
-import Data.Foldable (toList)
 import Control.Applicative hiding ((<|>),many)
-import Data.Array.Base (unsafeAt)
+
 
 type Parser = Parsec String ()
 
@@ -80,8 +78,9 @@ encode (mon,n) = do
   try $ string mon
   return n
 
-abbrevs = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Oct","Nov","Dec"]
-nums = ["01","02","03","04","05","06","07","08","09","10","11","12"]
+abbrevs = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+nums = ["01","02","03","04","05","06","07","08","09","10","11","12"] 
+
 months = let
   m = map encode $ zip abbrevs nums
   combined = foldl' (<|>) (head m) (tail m)
@@ -90,13 +89,14 @@ months = let
 date :: Parser (String,String,String)
 date = do
   day <- many1 digit
+  let day' = if 1 == length day then "0"++day else day
   many1 $ oneOf "fstnrdh"
   char ' '
   month <- months
   char ' '
   year <- many1 digit
   eof
-  return (year,month,day)
+  return (year,month,day')
 
 parseLine line = let
   output = parse date "" line
@@ -104,17 +104,3 @@ parseLine line = let
   in either (const "") agg output
   
 reformatDate dates = map parseLine dates
-{-
-item = undefined
-replaceReturn :: String -> String
-replaceReturn s = if s == "[newline]" then "\n" else s
-
-alphabet :: [String] -> [(String,String)]
-alphabet input = let
-  foo s = parse item "" s
-  output = map foo input
-  output' = map (either (const ("","")) id) output
-  output'' = (fmap . fmap) replaceReturn output'
-  in output''
-
--}
